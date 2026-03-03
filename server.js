@@ -10,6 +10,15 @@ try {
     });
 } catch (e) { /* no .env file, use system env vars */ }
 
+// Global error handlers to prevent silent crashes and log details on Render
+process.on('uncaughtException', (err) => {
+    console.error('CRITICAL: Uncaught Exception:', err);
+});
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('CRITICAL: Unhandled Rejection at:', promise, 'reason:', reason);
+});
+
+
 const http = require('http');
 const https = require('https');
 const fs = require('fs');
@@ -285,6 +294,13 @@ const server = http.createServer((req, res) => {
         return proxyToGemini(req, res);
     }
 
+    // Health check endpoint
+    if (req.method === 'GET' && (req.url === '/api/health' || req.url === '/health')) {
+        res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+        res.end(JSON.stringify({ status: 'ok', time: Date.now(), node: process.version }));
+        return;
+    }
+
     // REST API: check if room exists
     const roomMatch = req.url.match(/^\/api\/room\/([a-zA-Z0-9]+)$/);
     if (req.method === 'GET' && roomMatch) {
@@ -532,12 +548,12 @@ io.on('connection', (socket) => {
    START
    ============================================================ */
 
-server.listen(PORT, () => {
+server.listen(PORT, '0.0.0.0', () => {
     console.log('');
     console.log('  ╔══════════════════════════════════════════╗');
     console.log('  ║   CyberGuard Server Running!             ║');
     console.log('  ║                                          ║');
-    console.log(`  ║   → http://localhost:${PORT}               ║`);
+    console.log(`  ║   → http://0.0.0.0:${PORT}               ║`);
     console.log('  ║   → OpenAI API proxy enabled             ║');
     console.log('  ║   → Room-based chat enabled              ║');
     console.log('  ║                                          ║');
