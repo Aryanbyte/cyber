@@ -1,5 +1,7 @@
 node_modules/
 training_data/
+saved_model/
 *.pyc
+*.keras
 __pycache__/
 .env
