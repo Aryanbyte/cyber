@@ -1,0 +1,41 @@
+{
+    "name": "CyberGuard — AI Cyberbullying Detector",
+    "short_name": "CyberGuard",
+    "description": "Detect cyberbullying, hate speech, and harmful content in real-time with AI-powered analysis. Features moderated chat rooms with instant notifications.",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#0c1222",
+    "theme_color": "#0d9488",
+    "orientation": "any",
+    "scope": "/",
+    "icons": [
+        {
+            "src": "/icon-192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "/icon-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any maskable"
+        }
+    ],
+    "categories": [
+        "utilities",
+        "social"
+    ],
+    "shortcuts": [
+        {
+            "name": "Scan Text",
+            "url": "/",
+            "description": "Scan text for cyberbullying"
+        },
+        {
+            "name": "Chat Room",
+            "url": "/chat.html",
+            "description": "Join a moderated chat room"
+        }
+    ]
+}

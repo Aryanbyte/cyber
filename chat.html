@@ -1,0 +1,1744 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CyberGuard Chat — Moderated Rooms</title>
+    <meta name="description"
+        content="Create or join a moderated chat room. AI-powered cyberbullying detection with real-time notifications.">
+    <meta name="theme-color" content="#0d9488">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/icon-512.png">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@600;700;800&display=swap"
+        rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+        /* ============ Design Tokens ============ */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg: #fafbfd;
+            --bg-card: #ffffff;
+            --bg-elevated: #f1f5f9;
+            --border: #e2e8f0;
+            --border-light: #f1f5f9;
+            --text: #0f172a;
+            --text-light: #475569;
+            --text-faint: #94a3b8;
+            --accent: #0d9488;
+            --accent-light: #f0fdfa;
+            --accent-dark: #0f766e;
+            --accent-glow: rgba(13, 148, 136, 0.15);
+            --red: #ef4444;
+            --red-light: #fef2f2;
+            --amber: #f59e0b;
+            --amber-light: #fffbeb;
+            --blue: #3b82f6;
+            --green: #10b981;
+            --green-light: #ecfdf5;
+            --purple: #8b5cf6;
+            --nav-bg: rgba(255, 255, 255, 0.72);
+            --nav-border: rgba(226, 232, 240, 0.6);
+            --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.04);
+            --shadow-md: 0 4px 16px rgba(15, 23, 42, 0.06);
+            --shadow-lg: 0 8px 32px rgba(15, 23, 42, 0.10);
+            --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            --font-heading: 'Outfit', sans-serif;
+            --radius: 14px;
+            --radius-sm: 8px;
+            --transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        [data-theme="dark"] {
+            --bg: #0c1222;
+            --bg-card: #151d30;
+            --bg-elevated: #1a2540;
+            --border: #1e293b;
+            --border-light: #1e293b;
+            --text: #e2e8f0;
+            --text-light: #94a3b8;
+            --text-faint: #64748b;
+            --accent: #2dd4bf;
+            --accent-light: rgba(45, 212, 191, 0.08);
+            --accent-dark: #14b8a6;
+            --accent-glow: rgba(45, 212, 191, 0.12);
+            --red: #f87171;
+            --red-light: rgba(248, 113, 113, 0.1);
+            --amber: #fbbf24;
+            --amber-light: rgba(251, 191, 36, 0.1);
+            --green: #34d399;
+            --green-light: rgba(52, 211, 153, 0.1);
+            --purple: #a78bfa;
+            --nav-bg: rgba(12, 18, 34, 0.8);
+            --nav-border: rgba(30, 41, 59, 0.6);
+            --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.2);
+            --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.25);
+            --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.35);
+        }
+
+        html {
+            scroll-behavior: smooth;
+            height: 100%;
+        }
+
+        body {
+            font-family: var(--font);
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+            height: 100%;
+            transition: background var(--transition), color var(--transition);
+        }
+
+        /* ============ TOPBAR ============ */
+        .topbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 1.5rem;
+            height: 56px;
+            background: var(--nav-bg);
+            backdrop-filter: blur(16px);
+            border-bottom: 1px solid var(--nav-border);
+            transition: background var(--transition);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.55rem;
+            text-decoration: none;
+            font-family: var(--font-heading);
+            font-weight: 700;
+            font-size: 1.1rem;
+            color: var(--text);
+        }
+
+        .logo-mark {
+            width: 30px;
+            height: 30px;
+            background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+            color: #fff;
+            border-radius: 8px;
+            display: grid;
+            place-items: center;
+            font-size: 0.68rem;
+            font-weight: 800;
+        }
+
+        .nav-right {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .nav-link {
+            text-decoration: none;
+            color: var(--text-light);
+            font-size: 0.85rem;
+            font-weight: 500;
+            padding: 0.4rem 0.85rem;
+            border-radius: var(--radius-sm);
+            transition: all var(--transition);
+        }
+
+        .nav-link:hover {
+            background: var(--accent-light);
+            color: var(--accent);
+        }
+
+        .nav-link.active {
+            background: var(--accent-light);
+            color: var(--accent-dark);
+            font-weight: 600;
+        }
+
+        .theme-toggle {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
+            border: 1px solid var(--border);
+            border-radius: 9px;
+            background: var(--bg-card);
+            color: var(--text-light);
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all var(--transition);
+        }
+
+        .theme-toggle:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .theme-toggle .icon-sun,
+        .theme-toggle .icon-moon {
+            display: none;
+        }
+
+        :root .theme-toggle .icon-sun {
+            display: inline;
+        }
+
+        [data-theme="dark"] .theme-toggle .icon-moon {
+            display: inline;
+        }
+
+        [data-theme="dark"] .theme-toggle .icon-sun {
+            display: none;
+        }
+
+        /* ============ LOBBY SCREEN ============ */
+        .lobby-screen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 2rem 1rem;
+            gap: 1.5rem;
+        }
+
+        .lobby-screen.hidden {
+            display: none;
+        }
+
+        .lobby-hero {
+            text-align: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .lobby-hero .shield-icon {
+            font-size: 3rem;
+            color: var(--accent);
+            margin-bottom: 0.6rem;
+            display: block;
+            animation: floatIcon 3s ease-in-out infinite;
+        }
+
+        @keyframes floatIcon {
+
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-8px);
+            }
+        }
+
+        .lobby-hero h1 {
+            font-family: var(--font-heading);
+            font-size: 2rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--accent), var(--purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.3rem;
+        }
+
+        .lobby-hero p {
+            color: var(--text-light);
+            font-size: 0.95rem;
+            max-width: 400px;
+        }
+
+        .lobby-cards {
+            display: flex;
+            gap: 1.25rem;
+            flex-wrap: wrap;
+            justify-content: center;
+            max-width: 700px;
+            width: 100%;
+        }
+
+        .lobby-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 2rem 1.5rem;
+            box-shadow: var(--shadow-md);
+            text-align: center;
+            flex: 1;
+            min-width: 280px;
+            max-width: 340px;
+            transition: all var(--transition);
+        }
+
+        .lobby-card:hover {
+            box-shadow: var(--shadow-lg);
+            transform: translateY(-2px);
+            border-color: var(--accent);
+        }
+
+        .lobby-card .card-icon {
+            font-size: 2rem;
+            color: var(--accent);
+            margin-bottom: 0.6rem;
+        }
+
+        .lobby-card h2 {
+            font-family: var(--font-heading);
+            font-size: 1.15rem;
+            font-weight: 700;
+            margin-bottom: 0.3rem;
+        }
+
+        .lobby-card .card-desc {
+            color: var(--text-light);
+            font-size: 0.82rem;
+            margin-bottom: 1.2rem;
+            line-height: 1.4;
+        }
+
+        .lobby-input {
+            width: 100%;
+            padding: 0.65rem 1rem;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            font-family: var(--font);
+            font-size: 0.9rem;
+            color: var(--text);
+            background: var(--bg-elevated);
+            transition: border-color var(--transition);
+            margin-bottom: 0.65rem;
+        }
+
+        .lobby-input:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .lobby-input::placeholder {
+            color: var(--text-faint);
+        }
+
+        .room-code-input {
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            font-weight: 700;
+            font-size: 1.1rem;
+            text-align: center;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            font-family: var(--font);
+            font-size: 0.875rem;
+            font-weight: 600;
+            padding: 0.65rem 1.5rem;
+            border: none;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: all var(--transition);
+            background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+            color: #fff;
+            box-shadow: 0 2px 8px var(--accent-glow);
+            width: 100%;
+            justify-content: center;
+        }
+
+        .btn:hover {
+            box-shadow: 0 6px 20px var(--accent-glow);
+            transform: translateY(-1px);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1.5px solid var(--accent);
+            color: var(--accent);
+            box-shadow: none;
+        }
+
+        .btn-outline:hover {
+            background: var(--accent-light);
+            box-shadow: none;
+        }
+
+        .error-text {
+            color: var(--red);
+            font-size: 0.78rem;
+            margin-top: 0.3rem;
+            min-height: 1.2rem;
+        }
+
+        /* ============ CHAT LAYOUT ============ */
+        .chat-app {
+            display: none;
+            flex-direction: column;
+            height: 100vh;
+            padding-top: 56px;
+        }
+
+        .chat-app.active {
+            display: flex;
+        }
+
+        .chat-body {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        /* Sidebar */
+        .chat-sidebar {
+            width: 230px;
+            background: var(--bg-card);
+            border-right: 1px solid var(--border);
+            padding: 1.25rem;
+            overflow-y: auto;
+            transition: background var(--transition);
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+        }
+
+        .sidebar-section-title {
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--text-faint);
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        /* Room Info Card */
+        .room-info {
+            background: var(--bg-elevated);
+            border-radius: var(--radius-sm);
+            padding: 0.85rem;
+        }
+
+        .room-code-display {
+            font-family: var(--font-heading);
+            font-size: 1.3rem;
+            font-weight: 800;
+            letter-spacing: 0.15em;
+            color: var(--accent);
+            text-align: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .room-actions {
+            display: flex;
+            gap: 0.35rem;
+        }
+
+        .room-action-btn {
+            flex: 1;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.3rem;
+            font-family: var(--font);
+            font-size: 0.72rem;
+            font-weight: 600;
+            padding: 0.4rem 0.5rem;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            background: var(--bg-card);
+            color: var(--text-light);
+            cursor: pointer;
+            transition: all var(--transition);
+        }
+
+        .room-action-btn:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+            background: var(--accent-light);
+        }
+
+        .room-action-btn.copied {
+            border-color: var(--green);
+            color: var(--green);
+            background: var(--green-light);
+        }
+
+        .user-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.35rem 0;
+            font-size: 0.85rem;
+            color: var(--text);
+        }
+
+        .user-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--green);
+            flex-shrink: 0;
+        }
+
+        .leave-btn {
+            margin-top: auto;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.35rem;
+            font-family: var(--font);
+            font-size: 0.8rem;
+            font-weight: 600;
+            padding: 0.55rem 1rem;
+            border: 1.5px solid var(--red);
+            border-radius: var(--radius-sm);
+            background: transparent;
+            color: var(--red);
+            cursor: pointer;
+            transition: all var(--transition);
+        }
+
+        .leave-btn:hover {
+            background: var(--red-light);
+        }
+
+        /* Message Area */
+        .chat-main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+        }
+
+        /* Room header bar inside chat area (mobile friendly) */
+        .room-header-bar {
+            display: none;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.5rem 1rem;
+            border-bottom: 1px solid var(--border);
+            background: var(--bg-card);
+            font-size: 0.82rem;
+        }
+
+        .room-header-bar .room-code-inline {
+            font-weight: 700;
+            color: var(--accent);
+            letter-spacing: 0.1em;
+        }
+
+        .room-header-bar .hdr-actions {
+            display: flex;
+            gap: 0.35rem;
+        }
+
+        .room-header-bar .hdr-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            font-family: var(--font);
+            font-size: 0.72rem;
+            font-weight: 600;
+            padding: 0.3rem 0.55rem;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            background: var(--bg-elevated);
+            color: var(--text-light);
+            cursor: pointer;
+            transition: all var(--transition);
+        }
+
+        .room-header-bar .hdr-btn:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1.25rem 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+        }
+
+        .messages::-webkit-scrollbar {
+            width: 5px;
+        }
+
+        .messages::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 99px;
+        }
+
+        /* Message Bubbles */
+        .msg {
+            max-width: 70%;
+            animation: fadeMsg 0.25s ease;
+        }
+
+        @keyframes fadeMsg {
+            from {
+                opacity: 0;
+                transform: translateY(8px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .msg.own {
+            align-self: flex-end;
+        }
+
+        .msg.other {
+            align-self: flex-start;
+        }
+
+        .msg-header {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            margin-bottom: 0.2rem;
+        }
+
+        .msg-user {
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: var(--accent);
+        }
+
+        .msg.own .msg-user {
+            color: var(--purple);
+        }
+
+        .msg-time {
+            font-size: 0.68rem;
+            color: var(--text-faint);
+        }
+
+        .msg-bubble {
+            padding: 0.6rem 0.9rem;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            position: relative;
+            word-wrap: break-word;
+        }
+
+        .msg.own .msg-bubble {
+            background: var(--accent-light);
+            color: var(--text);
+            border-bottom-right-radius: 4px;
+        }
+
+        .msg.other .msg-bubble {
+            background: var(--bg-elevated);
+            color: var(--text);
+            border-bottom-left-radius: 4px;
+        }
+
+        /* ---- Flagged messages ---- */
+        .msg-bubble.flagged {
+            border: 1.5px solid var(--amber);
+        }
+
+        .msg-bubble.flagged.sev-high,
+        .msg-bubble.flagged.sev-critical {
+            border-color: var(--red);
+        }
+
+        .msg-bubble.flagged .msg-text {
+            filter: blur(5px);
+            user-select: none;
+            transition: filter 0.3s ease;
+        }
+
+        .msg-bubble.flagged .msg-text.revealed {
+            filter: none;
+            user-select: auto;
+        }
+
+        .msg-badge {
+            display: none;
+            align-items: center;
+            gap: 0.3rem;
+            margin-top: 0.4rem;
+            font-size: 0.72rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .msg-bubble.flagged .msg-badge {
+            display: inline-flex;
+        }
+
+        .msg-badge.sev-low {
+            color: var(--blue);
+        }
+
+        .msg-badge.sev-medium {
+            color: var(--amber);
+        }
+
+        .msg-badge.sev-high {
+            color: var(--red);
+        }
+
+        .msg-badge.sev-critical {
+            color: var(--red);
+        }
+
+        .flagged-cats {
+            display: none;
+            flex-wrap: wrap;
+            gap: 0.25rem;
+            margin-top: 0.3rem;
+        }
+
+        .msg-bubble.flagged .flagged-cats {
+            display: flex;
+        }
+
+        .mini-tag {
+            font-size: 0.65rem;
+            font-weight: 600;
+            padding: 0.1rem 0.4rem;
+            border-radius: 4px;
+            background: var(--red-light);
+            color: var(--red);
+        }
+
+        /* System messages */
+        .system-msg {
+            text-align: center;
+            font-size: 0.78rem;
+            color: var(--text-faint);
+            padding: 0.5rem 0;
+        }
+
+        .system-msg i {
+            font-size: 0.7rem;
+            margin-right: 0.2rem;
+        }
+
+        /* Typing indicator */
+        .typing-indicator {
+            font-size: 0.78rem;
+            color: var(--text-faint);
+            padding: 0 1.5rem 0.5rem;
+            min-height: 1.5rem;
+            font-style: italic;
+        }
+
+        /* Input bar */
+        .chat-input-bar {
+            display: flex;
+            gap: 0.5rem;
+            padding: 0.75rem 1.25rem;
+            border-top: 1px solid var(--border);
+            background: var(--bg-card);
+            transition: background var(--transition);
+        }
+
+        .chat-input {
+            flex: 1;
+            padding: 0.65rem 1rem;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            font-family: var(--font);
+            font-size: 0.9rem;
+            color: var(--text);
+            background: var(--bg-elevated);
+            transition: border-color var(--transition), background var(--transition);
+        }
+
+        .chat-input:focus {
+            outline: none;
+            border-color: var(--accent);
+            background: var(--bg-card);
+        }
+
+        .chat-input::placeholder {
+            color: var(--text-faint);
+        }
+
+        .send-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 42px;
+            height: 42px;
+            background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+            color: #fff;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all var(--transition);
+        }
+
+        .send-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px var(--accent-glow);
+        }
+
+        /* ============ TOAST NOTIFICATION ============ */
+        .toast-container {
+            position: fixed;
+            top: 68px;
+            right: 1rem;
+            z-index: 200;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            max-width: 360px;
+        }
+
+        .toast {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-left: 4px solid var(--amber);
+            border-radius: var(--radius-sm);
+            padding: 0.75rem 1rem;
+            box-shadow: var(--shadow-md);
+            animation: toastIn 0.35s ease, toastOut 0.35s ease 4s forwards;
+            display: flex;
+            align-items: flex-start;
+            gap: 0.5rem;
+        }
+
+        .toast.sev-high,
+        .toast.sev-critical {
+            border-left-color: var(--red);
+        }
+
+        .toast-icon {
+            font-size: 1.2rem;
+            flex-shrink: 0;
+            margin-top: 0.1rem;
+        }
+
+        .toast.sev-low .toast-icon,
+        .toast.sev-medium .toast-icon {
+            color: var(--amber);
+        }
+
+        .toast.sev-high .toast-icon,
+        .toast.sev-critical .toast-icon {
+            color: var(--red);
+        }
+
+        .toast-body {
+            flex: 1;
+        }
+
+        .toast-title {
+            font-size: 0.82rem;
+            font-weight: 700;
+            margin-bottom: 0.15rem;
+        }
+
+        .toast-text {
+            font-size: 0.78rem;
+            color: var(--text-light);
+            line-height: 1.45;
+        }
+
+        .toast-cats {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.2rem;
+            margin-top: 0.3rem;
+        }
+
+        @keyframes toastIn {
+            from {
+                opacity: 0;
+                transform: translateX(40px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes toastOut {
+            from {
+                opacity: 1;
+            }
+
+            to {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+        }
+
+        /* ============ SHARE MODAL ============ */
+        .share-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 300;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(6px);
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.2s ease;
+        }
+
+        .share-overlay.active {
+            display: flex;
+        }
+
+        .share-modal {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 2rem;
+            max-width: 380px;
+            width: 90%;
+            box-shadow: var(--shadow-lg);
+            text-align: center;
+            animation: modalPop 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+        }
+
+        @keyframes modalPop {
+            from {
+                opacity: 0;
+                transform: scale(0.9) translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        .share-modal-close {
+            position: absolute;
+            top: 0.75rem;
+            right: 0.75rem;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: 1px solid var(--border);
+            background: var(--bg-elevated);
+            color: var(--text-light);
+            font-size: 1rem;
+            cursor: pointer;
+            display: grid;
+            place-items: center;
+            transition: all var(--transition);
+        }
+
+        .share-modal-close:hover {
+            background: var(--red-light);
+            color: var(--red);
+            border-color: var(--red);
+        }
+
+        .share-modal h2 {
+            font-family: var(--font-heading);
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 0.3rem;
+        }
+
+        .share-modal .share-subtitle {
+            color: var(--text-light);
+            font-size: 0.82rem;
+            margin-bottom: 1.25rem;
+        }
+
+        .share-room-code {
+            font-family: var(--font-heading);
+            font-size: 2rem;
+            font-weight: 800;
+            letter-spacing: 0.2em;
+            color: var(--accent);
+            background: var(--accent-light);
+            padding: 0.5rem 1.5rem;
+            border-radius: var(--radius-sm);
+            display: inline-block;
+            margin-bottom: 1.25rem;
+            border: 1.5px dashed var(--accent);
+        }
+
+        .share-qr-wrap {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 1.25rem;
+        }
+
+        .share-qr-wrap canvas {
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            background: #fff;
+            padding: 10px;
+        }
+
+        .share-link-row {
+            display: flex;
+            gap: 0.4rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .share-link-input {
+            flex: 1;
+            padding: 0.55rem 0.75rem;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            font-family: var(--font);
+            font-size: 0.78rem;
+            color: var(--text);
+            background: var(--bg-elevated);
+            outline: none;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .share-link-input:focus {
+            border-color: var(--accent);
+        }
+
+        .share-btn-row {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .share-btn-row .btn {
+            flex: 1;
+            justify-content: center;
+        }
+
+        /* ============ RESPONSIVE ============ */
+        @media (max-width: 700px) {
+            .chat-sidebar {
+                display: none;
+            }
+
+            .room-header-bar {
+                display: flex !important;
+            }
+
+            .msg {
+                max-width: 85%;
+            }
+
+            .toast-container {
+                left: 1rem;
+                right: 1rem;
+                max-width: none;
+            }
+
+            .lobby-hero h1 {
+                font-size: 1.5rem;
+            }
+
+            .lobby-cards {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .lobby-card {
+                max-width: 100%;
+            }
+        }
+
+        /* ============ Misc ============ */
+        .divider-text {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            color: var(--text-faint);
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            margin: 0.5rem 0;
+        }
+
+        .divider-text::before,
+        .divider-text::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border);
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <nav class="topbar">
+        <a href="/" class="logo">
+            <div class="logo-mark">CG</div>
+            CyberGuard
+        </a>
+        <div class="nav-right">
+            <a href="/" class="nav-link">Home</a>
+            <a href="/chat.html" class="nav-link active">Chat</a>
+            <button class="theme-toggle" id="themeToggle" title="Toggle dark mode">
+                <i class="ph ph-sun icon-sun"></i>
+                <i class="ph ph-moon icon-moon"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- LOBBY SCREEN -->
+    <div class="lobby-screen" id="lobbyScreen">
+        <div class="lobby-hero">
+            <i class="ph-fill ph-shield-check shield-icon"></i>
+            <h1>CyberGuard Chat Rooms</h1>
+            <p>Create a secure, AI-moderated room and invite anyone to join — from any device.</p>
+        </div>
+
+        <div class="lobby-cards">
+            <!-- CREATE ROOM CARD -->
+            <div class="lobby-card" id="createCard">
+                <div class="card-icon"><i class="ph-fill ph-plus-circle"></i></div>
+                <h2>Create a Room</h2>
+                <p class="card-desc">Start a new moderated room and share the link with friends.</p>
+                <input type="text" class="lobby-input" id="createNameInput" placeholder="Your name..." maxlength="20">
+                <button class="btn" id="createRoomBtn">
+                    <i class="ph ph-rocket-launch"></i> Create Room
+                </button>
+                <div class="error-text" id="createError"></div>
+            </div>
+
+            <!-- JOIN ROOM CARD -->
+            <div class="lobby-card" id="joinCard">
+                <div class="card-icon"><i class="ph-fill ph-sign-in"></i></div>
+                <h2>Join a Room</h2>
+                <p class="card-desc">Enter a room code or use a shared link to jump in.</p>
+                <input type="text" class="lobby-input" id="joinNameInput" placeholder="Your name..." maxlength="20">
+                <input type="text" class="lobby-input room-code-input" id="roomCodeInput" placeholder="ROOM CODE"
+                    maxlength="6">
+                <button class="btn btn-outline" id="joinRoomBtn">
+                    <i class="ph ph-sign-in"></i> Join Room
+                </button>
+                <div class="error-text" id="joinError"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CHAT APP -->
+    <div class="chat-app" id="chatApp">
+        <div class="chat-body">
+            <aside class="chat-sidebar" id="chatSidebar">
+                <div>
+                    <div class="sidebar-section-title">Room Code</div>
+                    <div class="room-info">
+                        <div class="room-code-display" id="sidebarRoomCode">------</div>
+                        <div class="room-actions">
+                            <button class="room-action-btn" id="copyLinkBtn" title="Copy invite link">
+                                <i class="ph ph-copy"></i> Copy Link
+                            </button>
+                            <button class="room-action-btn" id="shareLinkBtn" title="Share invite link">
+                                <i class="ph ph-share-network"></i> Share
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <div class="sidebar-section-title">Online Users</div>
+                    <div id="userList"></div>
+                </div>
+                <button class="leave-btn" id="leaveBtn">
+                    <i class="ph ph-sign-out"></i> Leave Room
+                </button>
+            </aside>
+            <div class="chat-main">
+                <!-- Mobile header bar (visible < 700px) -->
+                <div class="room-header-bar" id="roomHeaderBar">
+                    <div>Room: <span class="room-code-inline" id="mobileRoomCode">------</span></div>
+                    <div class="hdr-actions">
+                        <button class="hdr-btn" id="mobileCopyBtn"><i class="ph ph-copy"></i> Copy</button>
+                        <button class="hdr-btn" id="mobileShareBtn"><i class="ph ph-share-network"></i></button>
+                        <button class="hdr-btn" id="mobileLeaveBtn" style="color:var(--red);border-color:var(--red)"><i
+                                class="ph ph-sign-out"></i></button>
+                    </div>
+                </div>
+                <div class="messages" id="messages"></div>
+                <div class="typing-indicator" id="typingIndicator"></div>
+                <div class="chat-input-bar">
+                    <input type="text" class="chat-input" id="msgInput" placeholder="Type a message..."
+                        maxlength="2000">
+                    <button class="send-btn" id="sendBtn" title="Send"><i class="ph ph-paper-plane-tilt"></i></button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOAST CONTAINER -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- SHARE MODAL -->
+    <div class="share-overlay" id="shareOverlay">
+        <div class="share-modal">
+            <button class="share-modal-close" id="shareModalClose" title="Close"><i class="ph ph-x"></i></button>
+            <h2><i class="ph ph-share-network" style="color:var(--accent);margin-right:0.3rem"></i> Share Room</h2>
+            <p class="share-subtitle">Invite anyone to join your moderated chat room</p>
+            <div class="share-room-code" id="shareModalCode">------</div>
+            <div class="share-qr-wrap">
+                <canvas id="qrCanvas" width="164" height="164"></canvas>
+            </div>
+            <div class="share-link-row">
+                <input type="text" class="share-link-input" id="shareLinkInput" readonly>
+                <button class="btn" style="flex:0;padding:0.55rem 0.85rem" id="shareCopyBtn" title="Copy link">
+                    <i class="ph ph-copy"></i>
+                </button>
+            </div>
+            <div class="share-btn-row">
+                <button class="btn btn-outline" id="shareNativeBtn"><i class="ph ph-share-network"></i> Share</button>
+                <button class="btn" id="shareCloseBtn">Done</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        (function () {
+            'use strict';
+
+            var SEV_LABELS = {
+                safe: 'Safe', low: 'Low Risk', medium: 'Medium Risk',
+                high: 'High Risk', critical: 'Critical'
+            };
+
+            /* ---------- Theme ---------- */
+            (function initTheme() {
+                var saved = null;
+                try { saved = localStorage.getItem('cyberguard-theme'); } catch (e) { }
+                if (saved === 'dark') {
+                    document.documentElement.setAttribute('data-theme', 'dark');
+                } else if (!saved && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                    document.documentElement.setAttribute('data-theme', 'dark');
+                }
+            })();
+
+            document.getElementById('themeToggle').addEventListener('click', function () {
+                var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+                if (isDark) {
+                    document.documentElement.removeAttribute('data-theme');
+                    try { localStorage.setItem('cyberguard-theme', 'light'); } catch (e) { }
+                } else {
+                    document.documentElement.setAttribute('data-theme', 'dark');
+                    try { localStorage.setItem('cyberguard-theme', 'dark'); } catch (e) { }
+                }
+            });
+
+            /* ---------- Socket ---------- */
+            var socket = io();
+            var myUsername = '';
+            var currentRoomCode = '';
+
+            /* ---------- DOM refs ---------- */
+            var lobbyScreen = document.getElementById('lobbyScreen');
+            var chatApp = document.getElementById('chatApp');
+
+            var createNameInput = document.getElementById('createNameInput');
+            var createRoomBtn = document.getElementById('createRoomBtn');
+            var createError = document.getElementById('createError');
+
+            var joinNameInput = document.getElementById('joinNameInput');
+            var roomCodeInput = document.getElementById('roomCodeInput');
+            var joinRoomBtn = document.getElementById('joinRoomBtn');
+            var joinError = document.getElementById('joinError');
+
+            var sidebarRoomCode = document.getElementById('sidebarRoomCode');
+            var mobileRoomCode = document.getElementById('mobileRoomCode');
+            var copyLinkBtn = document.getElementById('copyLinkBtn');
+            var shareLinkBtn = document.getElementById('shareLinkBtn');
+            var mobileCopyBtn = document.getElementById('mobileCopyBtn');
+            var mobileShareBtn = document.getElementById('mobileShareBtn');
+            var leaveBtn = document.getElementById('leaveBtn');
+            var mobileLeaveBtn = document.getElementById('mobileLeaveBtn');
+
+            var msgInput = document.getElementById('msgInput');
+            var sendBtn = document.getElementById('sendBtn');
+            var messagesEl = document.getElementById('messages');
+            var userListEl = document.getElementById('userList');
+            var typingEl = document.getElementById('typingIndicator');
+            var toastContainer = document.getElementById('toastContainer');
+
+            // Share modal refs
+            var shareOverlay = document.getElementById('shareOverlay');
+            var shareModalCode = document.getElementById('shareModalCode');
+            var shareLinkInput = document.getElementById('shareLinkInput');
+            var shareCopyBtn = document.getElementById('shareCopyBtn');
+            var shareNativeBtn = document.getElementById('shareNativeBtn');
+            var shareCloseBtn = document.getElementById('shareCloseBtn');
+            var shareModalCloseBtn = document.getElementById('shareModalClose');
+            var qrCanvas = document.getElementById('qrCanvas');
+
+            /* ---------- Auto-fill room code from URL ---------- */
+            (function checkUrlRoom() {
+                var params = new URLSearchParams(window.location.search);
+                var roomFromUrl = params.get('room');
+                if (roomFromUrl) {
+                    roomCodeInput.value = roomFromUrl.toUpperCase();
+                    // Auto-focus on join name
+                    joinNameInput.focus();
+                }
+            })();
+
+            /* ---------- Browser Notification Permission ---------- */
+            function requestNotificationPermission() {
+                if ('Notification' in window && Notification.permission === 'default') {
+                    Notification.requestPermission();
+                }
+            }
+
+            function sendBrowserNotification(title, body, tag) {
+                if (!('Notification' in window)) return;
+                if (Notification.permission !== 'granted') return;
+                // Only send when tab is not focused
+                if (document.hasFocus()) return;
+                try {
+                    var n = new Notification(title, {
+                        body: body,
+                        icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🛡️</text></svg>',
+                        tag: tag || 'cyberguard-alert',
+                        requireInteraction: false
+                    });
+                    n.onclick = function () {
+                        window.focus();
+                        n.close();
+                    };
+                    setTimeout(function () { n.close(); }, 8000);
+                } catch (e) { /* mobile may throw */ }
+            }
+
+            /* ---------- Room link helpers ---------- */
+            function getRoomLink() {
+                return window.location.origin + '/chat.html?room=' + currentRoomCode;
+            }
+
+            function copyRoomLink(btnEl) {
+                navigator.clipboard.writeText(getRoomLink()).then(function () {
+                    var orig = btnEl.innerHTML;
+                    btnEl.classList.add('copied');
+                    btnEl.innerHTML = '<i class="ph ph-check"></i> Copied!';
+                    setTimeout(function () {
+                        btnEl.classList.remove('copied');
+                        btnEl.innerHTML = orig;
+                    }, 2000);
+                });
+            }
+
+            function shareRoomLink() {
+                if (navigator.share) {
+                    navigator.share({
+                        title: 'Join my CyberGuard Chat Room',
+                        text: 'Join room ' + currentRoomCode + ' on CyberGuard Chat!',
+                        url: getRoomLink()
+                    }).catch(function () { });
+                } else {
+                    copyRoomLink(copyLinkBtn);
+                }
+            }
+
+            /* ========== QR CODE GENERATOR (canvas-based, no deps) ========== */
+            // Uses the Google Charts QR API rendered into an <img> → canvas
+            // This is the simplest zero-dep approach that works reliably
+            function generateQRCode(text, canvas, size) {
+                size = size || 164;
+                var img = new Image();
+                img.crossOrigin = 'anonymous';
+                img.onload = function () {
+                    canvas.width = size;
+                    canvas.height = size;
+                    var ctx = canvas.getContext('2d');
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fillRect(0, 0, size, size);
+                    ctx.drawImage(img, 0, 0, size, size);
+                };
+                img.onerror = function () {
+                    // Fallback: draw room code text if QR API fails
+                    canvas.width = size;
+                    canvas.height = size;
+                    var ctx = canvas.getContext('2d');
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fillRect(0, 0, size, size);
+                    ctx.fillStyle = '#0d9488';
+                    ctx.font = 'bold 28px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(currentRoomCode, size / 2, size / 2 - 10);
+                    ctx.fillStyle = '#64748b';
+                    ctx.font = '12px Arial';
+                    ctx.fillText('Scan unavailable', size / 2, size / 2 + 20);
+                };
+                img.src = 'https://api.qrserver.com/v1/create-qr-code/?size=' + size + 'x' + size + '&data=' + encodeURIComponent(text);
+            }
+
+            /* ---------- Share Modal ---------- */
+            function openShareModal() {
+                if (!currentRoomCode) return;
+                var link = getRoomLink();
+                shareModalCode.textContent = currentRoomCode;
+                shareLinkInput.value = link;
+                generateQRCode(link, qrCanvas, 164);
+                shareOverlay.classList.add('active');
+            }
+
+            function closeShareModal() {
+                shareOverlay.classList.remove('active');
+            }
+
+            // Wire share modal buttons
+            shareCloseBtn.addEventListener('click', closeShareModal);
+            shareModalCloseBtn.addEventListener('click', closeShareModal);
+            shareOverlay.addEventListener('click', function (e) {
+                if (e.target === shareOverlay) closeShareModal();
+            });
+
+            shareCopyBtn.addEventListener('click', function () {
+                navigator.clipboard.writeText(getRoomLink()).then(function () {
+                    shareCopyBtn.innerHTML = '<i class="ph ph-check"></i>';
+                    setTimeout(function () {
+                        shareCopyBtn.innerHTML = '<i class="ph ph-copy"></i>';
+                    }, 2000);
+                });
+            });
+
+            shareNativeBtn.addEventListener('click', function () {
+                if (navigator.share) {
+                    navigator.share({
+                        title: 'Join my CyberGuard Chat Room',
+                        text: 'Join room ' + currentRoomCode + ' on CyberGuard Chat!',
+                        url: getRoomLink()
+                    }).catch(function () { });
+                } else {
+                    // Fallback: copy link
+                    navigator.clipboard.writeText(getRoomLink());
+                    shareNativeBtn.innerHTML = '<i class="ph ph-check"></i> Copied!';
+                    setTimeout(function () {
+                        shareNativeBtn.innerHTML = '<i class="ph ph-share-network"></i> Share';
+                    }, 2000);
+                }
+            });
+
+            /* ---------- Enter Chat UI ---------- */
+            function enterChat(roomCode) {
+                currentRoomCode = roomCode;
+                lobbyScreen.classList.add('hidden');
+                chatApp.classList.add('active');
+                sidebarRoomCode.textContent = roomCode;
+                mobileRoomCode.textContent = roomCode;
+                messagesEl.innerHTML = '';
+                msgInput.focus();
+
+                // Update URL without reload
+                var newUrl = window.location.pathname + '?room=' + roomCode;
+                history.replaceState(null, '', newUrl);
+
+                // Request notification permission after user interaction
+                requestNotificationPermission();
+
+                // Auto-open share modal after creating a room
+                openShareModal();
+            }
+
+            function exitChat() {
+                socket.emit('leave-room');
+                currentRoomCode = '';
+                chatApp.classList.remove('active');
+                lobbyScreen.classList.remove('hidden');
+                userListEl.innerHTML = '';
+                messagesEl.innerHTML = '';
+                history.replaceState(null, '', window.location.pathname);
+            }
+
+            /* ---------- Create Room ---------- */
+            createRoomBtn.addEventListener('click', function () {
+                var name = createNameInput.value.trim();
+                if (!name) {
+                    createError.textContent = 'Please enter your name.';
+                    createNameInput.focus();
+                    return;
+                }
+                createError.textContent = '';
+                createRoomBtn.disabled = true;
+                createRoomBtn.innerHTML = '<span class="spinner"></span> Creating...';
+                myUsername = name;
+
+                socket.emit('create-room', myUsername, function (res) {
+                    createRoomBtn.disabled = false;
+                    createRoomBtn.innerHTML = '<i class="ph ph-rocket-launch"></i> Create Room';
+                    if (res.success) {
+                        enterChat(res.roomCode);
+                    } else {
+                        createError.textContent = 'Failed to create room. Try again.';
+                    }
+                });
+            });
+
+            createNameInput.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter') createRoomBtn.click();
+            });
+
+            /* ---------- Join Room ---------- */
+            joinRoomBtn.addEventListener('click', function () {
+                var name = joinNameInput.value.trim();
+                var code = roomCodeInput.value.trim().toUpperCase();
+                if (!name) {
+                    joinError.textContent = 'Please enter your name.';
+                    joinNameInput.focus();
+                    return;
+                }
+                if (!code || code.length < 4) {
+                    joinError.textContent = 'Please enter a valid room code.';
+                    roomCodeInput.focus();
+                    return;
+                }
+                joinError.textContent = '';
+                joinRoomBtn.disabled = true;
+                joinRoomBtn.innerHTML = '<span class="spinner" style="border-color:rgba(13,148,136,0.3);border-top-color:var(--accent)"></span> Joining...';
+                myUsername = name;
+
+                socket.emit('join-room', { roomCode: code, username: myUsername }, function (res) {
+                    joinRoomBtn.disabled = false;
+                    joinRoomBtn.innerHTML = '<i class="ph ph-sign-in"></i> Join Room';
+                    if (res.success) {
+                        enterChat(res.roomCode);
+                    } else {
+                        joinError.textContent = res.error || 'Could not join room.';
+                    }
+                });
+            });
+
+            joinNameInput.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter') {
+                    if (!roomCodeInput.value.trim()) { roomCodeInput.focus(); }
+                    else { joinRoomBtn.click(); }
+                }
+            });
+            roomCodeInput.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter') joinRoomBtn.click();
+            });
+
+            /* ---------- Room actions (now open share modal) ---------- */
+            copyLinkBtn.addEventListener('click', function () { openShareModal(); });
+            mobileCopyBtn.addEventListener('click', function () { openShareModal(); });
+            shareLinkBtn.addEventListener('click', function () { openShareModal(); });
+            mobileShareBtn.addEventListener('click', function () { openShareModal(); });
+            leaveBtn.addEventListener('click', exitChat);
+            mobileLeaveBtn.addEventListener('click', exitChat);
+
+            /* ---------- Send ---------- */
+            function sendMessage() {
+                var text = msgInput.value.trim();
+                if (!text) return;
+                socket.emit('chat-message', text);
+                msgInput.value = '';
+                socket.emit('stop-typing');
+            }
+
+            sendBtn.addEventListener('click', sendMessage);
+            msgInput.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter') sendMessage();
+            });
+
+            /* Typing */
+            var typingTimer = null;
+            msgInput.addEventListener('input', function () {
+                socket.emit('typing');
+                clearTimeout(typingTimer);
+                typingTimer = setTimeout(function () {
+                    socket.emit('stop-typing');
+                }, 1500);
+            });
+
+            /* ---------- Receive events ---------- */
+
+            // Chat messages
+            socket.on('chat-message', function (msg) {
+                var isOwn = msg.user === myUsername;
+                var div = document.createElement('div');
+                div.className = 'msg ' + (isOwn ? 'own' : 'other');
+
+                var isFlagged = msg.scan && msg.scan.sev !== 'safe';
+                var sevClass = isFlagged ? ' flagged sev-' + msg.scan.sev : '';
+
+                var catsHtml = '';
+                if (isFlagged && msg.scan.cats && msg.scan.cats.length > 0) {
+                    catsHtml = '<div class="flagged-cats">' +
+                        msg.scan.cats.map(function (c) {
+                            return '<span class="mini-tag">' + prettyName(c) + '</span>';
+                        }).join('') + '</div>';
+                }
+
+                var badgeHtml = '';
+                if (isFlagged) {
+                    var badgeIcon = msg.scan.sev === 'high' || msg.scan.sev === 'critical' ? '🚨' : '⚠️';
+                    badgeHtml = '<div class="msg-badge sev-' + msg.scan.sev + '" onclick="this.parentElement.querySelector(\'.msg-text\').classList.toggle(\'revealed\')">' +
+                        badgeIcon + ' ' + SEV_LABELS[msg.scan.sev] + ' · Click to ' + (isOwn ? 'view' : 'reveal') +
+                        '</div>';
+                }
+
+                var timeStr = new Date(msg.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+                div.innerHTML =
+                    '<div class="msg-header">' +
+                    '<span class="msg-user">' + esc(msg.user) + '</span>' +
+                    '<span class="msg-time">' + timeStr + '</span>' +
+                    '</div>' +
+                    '<div class="msg-bubble' + sevClass + '">' +
+                    '<div class="msg-text' + (isFlagged && !isOwn ? '' : ' revealed') + '">' + esc(msg.text) + '</div>' +
+                    badgeHtml +
+                    catsHtml +
+                    '</div>';
+
+                messagesEl.appendChild(div);
+                scrollToBottom();
+
+                // Browser notification for flagged messages from others
+                if (isFlagged && !isOwn) {
+                    var sevLabel = SEV_LABELS[msg.scan.sev] || msg.scan.sev;
+                    sendBrowserNotification(
+                        '⚠️ CyberGuard Alert',
+                        'Harmful message detected in chat (' + sevLabel + ') from ' + msg.user,
+                        'cyberguard-' + msg.id
+                    );
+                }
+            });
+
+            // System messages
+            socket.on('system-message', function (msg) {
+                var div = document.createElement('div');
+                div.className = 'system-msg';
+                div.innerHTML = '<i class="ph ph-info"></i> ' + esc(msg.text);
+                messagesEl.appendChild(div);
+                scrollToBottom();
+            });
+
+            // User list
+            socket.on('user-list', function (users) {
+                userListEl.innerHTML = users.map(function (u) {
+                    return '<div class="user-item"><div class="user-dot"></div> ' + esc(u) + '</div>';
+                }).join('');
+            });
+
+            // Typing
+            socket.on('typing', function (username) {
+                typingEl.textContent = username + ' is typing...';
+            });
+            socket.on('stop-typing', function () {
+                typingEl.textContent = '';
+            });
+
+            // Warning toast (sent only to the sender)
+            socket.on('warning', function (data) {
+                showToast(data);
+            });
+
+            /* ---------- Helpers ---------- */
+            function scrollToBottom() {
+                messagesEl.scrollTop = messagesEl.scrollHeight;
+            }
+
+            function esc(s) {
+                var d = document.createElement('div');
+                d.textContent = s;
+                return d.innerHTML;
+            }
+
+            function prettyName(s) {
+                return s.replace(/_/g, ' ').replace(/\b\w/g, function (c) { return c.toUpperCase(); });
+            }
+
+            function showToast(data) {
+                var toast = document.createElement('div');
+                toast.className = 'toast sev-' + data.sev;
+
+                var catsHtml = '';
+                if (data.cats && data.cats.length > 0) {
+                    catsHtml = '<div class="toast-cats">' +
+                        data.cats.map(function (c) {
+                            return '<span class="mini-tag">' + prettyName(c) + '</span>';
+                        }).join('') + '</div>';
+                }
+
+                toast.innerHTML =
+                    '<div class="toast-icon"><i class="ph-fill ph-warning"></i></div>' +
+                    '<div class="toast-body">' +
+                    '<div class="toast-title">Message Flagged</div>' +
+                    '<div class="toast-text">' + esc(data.message) + '</div>' +
+                    catsHtml +
+                    '</div>';
+
+                toastContainer.appendChild(toast);
+
+                // Also send a browser notification for the warning
+                sendBrowserNotification(
+                    '⚠️ Your Message Was Flagged',
+                    data.message,
+                    'cyberguard-warning-' + Date.now()
+                );
+
+                // Auto-remove after animation
+                setTimeout(function () {
+                    if (toast.parentElement) toast.remove();
+                }, 4500);
+            }
+        })();
+    </script>
+    <script>
+        // Register Service Worker for PWA
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js')
+                .then(function (reg) { console.log('SW registered:', reg.scope); })
+                .catch(function (err) { console.log('SW error:', err); });
+        }
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CyberGuard - Detect Cyberbullying & Hate Speech</title>
+    <meta name="description"
+        content="CyberGuard helps you detect cyberbullying and hate speech in text and images. AI-powered free online tool.">
+    <meta name="theme-color" content="#0d9488">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/icon-512.png">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@600;700;800&display=swap"
+        rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <nav class="topbar">
+        <a href="#" class="logo" id="logoLink">
+            <div class="logo-mark">CG</div>
+            CyberGuard
+        </a>
+        <div class="nav-right">
+            <div class="nav-items" id="navItems">
+                <a href="#" class="nav-item active" data-page="home">Home</a>
+                <a href="#" class="nav-item" data-page="detect">Detect</a>
+                <a href="#" class="nav-item" data-page="dashboard">Dashboard</a>
+                <a href="#" class="nav-item" data-page="history">History</a>
+                <a href="#" class="nav-item" data-page="chat">Chat</a>
+            </div>
+            <button class="theme-toggle" id="themeToggle" title="Toggle dark mode">
+                <i class="ph ph-sun icon-sun"></i>
+                <i class="ph ph-moon icon-moon"></i>
+            </button>
+            <button class="hamburger" id="hamburger">
+                <i class="ph ph-list"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- HOME PAGE -->
+    <main class="view active" id="home">
+        <div class="hero-wrapper">
+            <div class="hero-grid"></div>
+            <div class="hero-orb hero-orb-1"></div>
+            <div class="hero-orb hero-orb-2"></div>
+
+            <div class="hero">
+                <span class="hero-tag"><i class="ph-fill ph-shield-check"></i> AI-Powered Protection</span>
+                <h1>Stop online hate<br><span class="gradient-text">before it spreads.</span></h1>
+                <p>Paste any text or upload an image — our AI detector will flag harassment, threats, hate speech, and
+                    toxic content instantly. No sign-up needed.</p>
+                <div class="hero-btns">
+                    <button class="btn btn-fill" id="goDetect">Try it now &rarr;</button>
+                    <button class="btn btn-ghost" id="goLearn">Learn more</button>
+                </div>
+                <div class="hero-numbers">
+                    <div><strong id="homeScans">0</strong><span>scans done</span></div>
+                    <div><strong id="homeThreats">0</strong><span>threats caught</span></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="features-section" id="featuresSection">
+            <div class="section-header">
+                <h2>Why CyberGuard?</h2>
+                <p>Advanced detection powered by multiple AI models working together.</p>
+            </div>
+            <div class="features-strip">
+                <div class="feature-item">
+                    <div class="feature-icon"><i class="ph ph-lightning"></i></div>
+                    <h3>Instant Analysis</h3>
+                    <p>Results in under a second. No waiting around.</p>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon"><i class="ph ph-image"></i></div>
+                    <h3>Text & Image</h3>
+                    <p>Analyze text for hate speech and images for harmful visual content.</p>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon"><i class="ph ph-brain"></i></div>
+                    <h3>AI-Powered</h3>
+                    <p>Custom-trained AI model + NSFW detection + OCR text extraction.</p>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon"><i class="ph ph-lock-simple"></i></div>
+                    <h3>Privacy First</h3>
+                    <p>Your data stays in your browser. Nothing is stored on our servers.</p>
+                </div>
+            </div>
+        </div>
+
+        <footer class="site-footer">
+            <p>Built with care by the CyberGuard team. &copy; 2026 CyberGuard &mdash; Fighting online hate with AI.</p>
+        </footer>
+    </main>
+
+    <!-- DETECT PAGE -->
+    <main class="view" id="detect">
+        <div class="container">
+            <h2>Analyze Content</h2>
+            <p class="subtitle">Check text or images for cyberbullying and harmful content.</p>
+
+            <!-- Tab Switcher -->
+            <div class="detect-tabs">
+                <button class="detect-tab active" data-tab="text" id="tabText">
+                    <i class="ph ph-text-t"></i> Text
+                </button>
+                <button class="detect-tab" data-tab="image" id="tabImage">
+                    <i class="ph ph-image"></i> Image
+                </button>
+            </div>
+
+            <!-- TEXT TAB -->
+            <div class="tab-panel active" id="panelText">
+                <div class="box">
+                    <textarea id="textInput" rows="5"
+                        placeholder="e.g. You're so stupid, nobody wants to be around you..."></textarea>
+                    <div class="box-footer">
+                        <span class="char-info" id="charInfo">0 chars</span>
+                        <div class="box-actions">
+                            <button class="btn btn-ghost" id="sampleBtn"><i class="ph ph-shuffle"></i> Random
+                                sample</button>
+                            <button class="btn btn-ghost" id="clearBtn"><i class="ph ph-x"></i> Clear</button>
+                            <button class="btn btn-fill" id="analyzeBtn"><i class="ph ph-magnifying-glass"></i>
+                                Analyze</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- IMAGE TAB -->
+            <div class="tab-panel" id="panelImage">
+                <div class="box">
+                    <div class="upload-zone" id="uploadZone">
+                        <i class="ph ph-upload-simple upload-icon"></i>
+                        <p class="upload-title">Drag & drop an image here</p>
+                        <p class="upload-sub">or click to browse &middot; JPG, PNG, GIF, WEBP (max 10 MB)</p>
+                        <input type="file" id="imageInput" accept="image/*" hidden>
+                    </div>
+                    <div class="image-preview hidden" id="imagePreview">
+                        <img id="previewImg" alt="Preview">
+                        <button class="preview-remove" id="removeImage" title="Remove image">
+                            <i class="ph ph-x"></i>
+                        </button>
+                        <span class="preview-name" id="previewName"></span>
+                    </div>
+                    <div class="box-footer">
+                        <span class="char-info" id="imageInfo">No image selected</span>
+                        <div class="box-actions">
+                            <button class="btn btn-fill" id="analyzeImageBtn" disabled>
+                                <i class="ph ph-magnifying-glass"></i> Analyze Image
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Loader -->
+            <div class="loading hidden" id="loading">
+                <div class="dot-loader"><span></span><span></span><span></span></div>
+                <span id="loadingText">Scanning...</span>
+            </div>
+
+            <!-- Results -->
+            <div id="resultArea" class="hidden">
+                <div class="result-header" id="resultHeader">
+                    <div class="result-left">
+                        <span class="result-emoji" id="resultEmoji">&#x2705;</span>
+                        <div>
+                            <h3 id="resultTitle">Safe</h3>
+                            <p id="resultSubtitle">No issues found</p>
+                        </div>
+                    </div>
+                    <div class="score-pill" id="scorePill">0</div>
+                </div>
+
+                <div class="progress-track">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+
+                <div class="result-grid">
+                    <div class="box">
+                        <h4>Categories found</h4>
+                        <div class="tag-list" id="catTags"></div>
+                    </div>
+                    <div class="box">
+                        <h4>Flagged words</h4>
+                        <div class="tag-list" id="flagTags"></div>
+                    </div>
+                </div>
+
+                <!-- AI Analysis Detail Box -->
+                <div class="box ai-detail-box hidden" id="aiDetailBox">
+                    <h4><i class="ph-fill ph-robot"></i> AI Analysis</h4>
+                    <p id="aiDetailText"></p>
+                </div>
+
+                <div class="box advice-box" id="adviceBox">
+                    <h4><i class="ph-fill ph-chat-circle-dots"></i> What we suggest</h4>
+                    <p id="adviceText"></p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- DASHBOARD PAGE -->
+    <main class="view" id="dashboard">
+        <div class="container">
+            <h2>Dashboard</h2>
+            <p class="subtitle">A quick overview of everything you've scanned so far.</p>
+
+            <div class="metric-row">
+                <div class="metric"><span class="metric-num" id="mTotal">0</span><span class="metric-lbl">Total
+                        Scans</span></div>
+                <div class="metric"><span class="metric-num warn" id="mThreats">0</span><span
+                        class="metric-lbl">Threats</span></div>
+                <div class="metric"><span class="metric-num ok" id="mSafe">100%</span><span class="metric-lbl">Safe
+                        Rate</span></div>
+                <div class="metric"><span class="metric-num" id="mAvg">0</span><span class="metric-lbl">Avg Score</span>
+                </div>
+            </div>
+
+            <div class="box">
+                <h4>Severity breakdown</h4>
+                <div class="breakdown" id="breakdown">
+                    <div class="bk-row"><span class="bk-label">Critical</span>
+                        <div class="bk-track">
+                            <div class="bk-fill bk-critical" id="bkCritical"></div>
+                        </div><span class="bk-num" id="bnCritical">0</span>
+                    </div>
+                    <div class="bk-row"><span class="bk-label">High</span>
+                        <div class="bk-track">
+                            <div class="bk-fill bk-high" id="bkHigh"></div>
+                        </div><span class="bk-num" id="bnHigh">0</span>
+                    </div>
+                    <div class="bk-row"><span class="bk-label">Medium</span>
+                        <div class="bk-track">
+                            <div class="bk-fill bk-medium" id="bkMedium"></div>
+                        </div><span class="bk-num" id="bnMedium">0</span>
+                    </div>
+                    <div class="bk-row"><span class="bk-label">Low</span>
+                        <div class="bk-track">
+                            <div class="bk-fill bk-low" id="bkLow"></div>
+                        </div><span class="bk-num" id="bnLow">0</span>
+                    </div>
+                    <div class="bk-row"><span class="bk-label">Safe</span>
+                        <div class="bk-track">
+                            <div class="bk-fill bk-safe" id="bkSafe"></div>
+                        </div><span class="bk-num" id="bnSafe">0</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- HISTORY PAGE -->
+    <main class="view" id="history">
+        <div class="container">
+            <h2>History</h2>
+            <p class="subtitle">Everything you've analyzed, saved locally in your browser.</p>
+
+            <div class="hist-toolbar">
+                <input type="text" class="search-field" id="searchField" placeholder="Filter by text...">
+                <button class="btn btn-outline-danger" id="clearAllBtn"><i class="ph ph-trash"></i> Clear
+                    all</button>
+            </div>
+
+            <div class="box">
+                <div class="empty-msg" id="emptyMsg">
+                    <i class="ph ph-folder-open"></i>
+                    <p>Nothing here yet. <a href="#" id="goDetect2">Run your first scan!</a></p>
+                </div>
+                <table class="data-table" id="dataTable">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Content</th>
+                            <th>Type</th>
+                            <th>Result</th>
+                            <th>Score</th>
+                            <th>When</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <!-- CHAT PAGE -->
+    <main class="view" id="chat">
+        <!-- LOBBY SCREEN -->
+        <div class="chat-lobby" id="lobbyScreen">
+            <div class="lobby-hero">
+                <i class="ph-fill ph-shield-check shield-icon"></i>
+                <h1>CyberGuard Chat Rooms</h1>
+                <p>Create a secure, AI-moderated room and invite anyone to join — from any device.</p>
+            </div>
+            <div class="lobby-cards">
+                <!-- CREATE ROOM CARD -->
+                <div class="lobby-card" id="createCard">
+                    <div class="card-icon"><i class="ph-fill ph-plus-circle"></i></div>
+                    <h2>Create a Room</h2>
+                    <p class="card-desc">Start a new moderated room and share the link with friends.</p>
+                    <input type="text" class="lobby-input" id="createNameInput" placeholder="Your name..."
+                        maxlength="20">
+                    <button class="chat-btn" id="createRoomBtn">
+                        <i class="ph ph-rocket-launch"></i> Create Room
+                    </button>
+                    <div class="error-text" id="createError"></div>
+                </div>
+                <!-- JOIN ROOM CARD -->
+                <div class="lobby-card" id="joinCard">
+                    <div class="card-icon"><i class="ph-fill ph-sign-in"></i></div>
+                    <h2>Join a Room</h2>
+                    <p class="card-desc">Enter a room code or use a shared link to jump in.</p>
+                    <input type="text" class="lobby-input" id="joinNameInput" placeholder="Your name..." maxlength="20">
+                    <input type="text" class="lobby-input room-code-input" id="roomCodeInput" placeholder="ROOM CODE"
+                        maxlength="6">
+                    <button class="chat-btn chat-btn-outline" id="joinRoomBtn">
+                        <i class="ph ph-sign-in"></i> Join Room
+                    </button>
+                    <div class="error-text" id="joinError"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CHAT APP -->
+        <div class="chat-app" id="chatApp">
+            <div class="chat-body">
+                <aside class="chat-sidebar" id="chatSidebar">
+                    <div>
+                        <div class="sidebar-section-title">Room Code</div>
+                        <div class="room-info">
+                            <div class="room-code-display" id="sidebarRoomCode">------</div>
+                            <div class="room-actions">
+                                <button class="room-action-btn" id="copyLinkBtn" title="Copy invite link">
+                                    <i class="ph ph-copy"></i> Copy Link
+                                </button>
+                                <button class="room-action-btn" id="shareLinkBtn" title="Share invite link">
+                                    <i class="ph ph-share-network"></i> Share
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="sidebar-section-title">Online Users</div>
+                        <div id="userList"></div>
+                    </div>
+                    <button class="leave-btn" id="leaveBtn">
+                        <i class="ph ph-sign-out"></i> Leave Room
+                    </button>
+                </aside>
+                <div class="chat-main">
+                    <!-- Mobile header bar -->
+                    <div class="room-header-bar" id="roomHeaderBar">
+                        <div>Room: <span class="room-code-inline" id="mobileRoomCode">------</span></div>
+                        <div class="hdr-actions">
+                            <button class="hdr-btn" id="mobileCopyBtn"><i class="ph ph-copy"></i> Copy</button>
+                            <button class="hdr-btn" id="mobileShareBtn"><i class="ph ph-share-network"></i></button>
+                            <button class="hdr-btn" id="mobileLeaveBtn"
+                                style="color:var(--red);border-color:var(--red)"><i class="ph ph-sign-out"></i></button>
+                        </div>
+                    </div>
+                    <div class="messages" id="messages"></div>
+                    <div class="typing-indicator" id="typingIndicator"></div>
+                    <div class="chat-input-bar">
+                        <input type="text" class="chat-input" id="msgInput" placeholder="Type a message..."
+                            maxlength="2000">
+                        <button class="send-btn" id="sendBtn" title="Send"><i
+                                class="ph ph-paper-plane-tilt"></i></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TOAST CONTAINER -->
+        <div class="toast-container" id="toastContainer"></div>
+
+        <!-- SHARE MODAL -->
+        <div class="share-overlay" id="shareOverlay">
+            <div class="share-modal">
+                <button class="share-modal-close" id="shareModalClose" title="Close"><i class="ph ph-x"></i></button>
+                <h2><i class="ph ph-share-network" style="color:var(--accent);margin-right:0.3rem"></i> Share Room</h2>
+                <p class="share-subtitle">Invite anyone to join your moderated chat room</p>
+                <div class="share-room-code" id="shareModalCode">------</div>
+                <div class="share-qr-wrap">
+                    <canvas id="qrCanvas" width="164" height="164"></canvas>
+                </div>
+                <div class="share-link-row">
+                    <input type="text" class="share-link-input" id="shareLinkInput" readonly>
+                    <button class="chat-btn" style="flex:0;padding:0.55rem 0.85rem" id="shareCopyBtn" title="Copy link">
+                        <i class="ph ph-copy"></i>
+                    </button>
+                </div>
+                <div class="share-btn-row">
+                    <button class="chat-btn chat-btn-outline" id="shareNativeBtn"><i class="ph ph-share-network"></i>
+                        Share</button>
+                    <button class="chat-btn" id="shareCloseBtn">Done</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.21.0/dist/tf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/nsfwjs@4.1.0/dist/nsfwjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4.1.4/dist/tesseract.min.js"></script>
+    <script src="script.js"></script>
+    <!-- PWA Install Banner -->
+    <div class="install-banner hidden" id="installBanner">
+        <div class="install-banner-content">
+            <div class="install-banner-left">
+                <div class="install-icon-wrap">
+                    <img src="/icon-192.png" alt="CyberGuard" width="40" height="40">
+                </div>
+                <div>
+                    <strong>Install CyberGuard</strong>
+                    <span>Add to home screen for quick access</span>
+                </div>
+            </div>
+            <div class="install-banner-actions">
+                <button class="btn btn-ghost install-dismiss" id="installDismiss">Not now</button>
+                <button class="btn btn-fill install-accept" id="installAccept"><i class="ph ph-download-simple"></i>
+                    Install</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Register Service Worker for PWA
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js')
+                .then(function (reg) { console.log('SW registered:', reg.scope); })
+                .catch(function (err) { console.log('SW error:', err); });
+        }
+
+        // PWA Install Prompt
+        (function () {
+            var deferredPrompt = null;
+            var banner = document.getElementById('installBanner');
+            var acceptBtn = document.getElementById('installAccept');
+            var dismissBtn = document.getElementById('installDismiss');
+
+            // Don't show if already in standalone mode or dismissed recently
+            var isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+            var dismissed = false;
+            try { dismissed = localStorage.getItem('cyberguard-install-dismissed') === 'true'; } catch (e) { }
+
+            if (isStandalone || dismissed) return;
+
+            window.addEventListener('beforeinstallprompt', function (e) {
+                e.preventDefault();
+                deferredPrompt = e;
+                banner.classList.remove('hidden');
+            });
+
+            acceptBtn.addEventListener('click', function () {
+                if (!deferredPrompt) return;
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then(function (result) {
+                    deferredPrompt = null;
+                    banner.classList.add('hidden');
+                });
+            });
+
+            dismissBtn.addEventListener('click', function () {
+                banner.classList.add('hidden');
+                try { localStorage.setItem('cyberguard-install-dismissed', 'true'); } catch (e) { }
+            });
+
+            window.addEventListener('appinstalled', function () {
+                banner.classList.add('hidden');
+                deferredPrompt = null;
+            });
+        })();
+    </script>
+</body>
+
+</html>
