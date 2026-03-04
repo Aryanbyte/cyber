@@ -29,6 +29,18 @@ const PORT = process.env.PORT || 3000;
 const STATIC_DIR = __dirname;
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY || '';
+const BYTEZ_API_KEY = process.env.BYTEZ_API_KEY || '';
+
+// Initialize Bytez SDK
+let sdk;
+const BYTEZ_MODEL = 'mistralai/Mistral-7B-Instruct-v0.3'; // Cost-effective model
+try {
+    const Bytez = require('bytez.js');
+    sdk = new Bytez(BYTEZ_API_KEY);
+    console.log(`  [Bytez] SDK initialized (model: ${BYTEZ_MODEL})`);
+} catch (e) {
+    console.warn('  [Bytez] Failed to load bytez.js. AI detection will be disabled.');
+}
 
 const MIME = {
     '.html': 'text/html',
@@ -197,6 +209,49 @@ function scan(text) {
     else out.sev = 'critical';
 
     return out;
+}
+
+/**
+ * AI-powered detection using Bytez (Claude Opus)
+ */
+async function aiScan(text) {
+    if (!sdk || !BYTEZ_API_KEY) return null;
+
+    try {
+        const model = sdk.model(BYTEZ_MODEL);
+        const { error, output } = await model.run([
+            {
+                "role": "user",
+                "content": `Analyze this message for cyberbullying, hate speech, or harassment. 
+                Respond ONLY with a JSON object in this format: 
+                {"score": number(0-100), "sev": "safe"|"low"|"medium"|"high"|"critical", "reason": "short explanation"}
+                
+                Message: "${text}"`
+            }
+        ]);
+
+        if (error) {
+            console.error('  [Bytez] Model error:', error);
+            return null;
+        }
+
+        // The output might be a string that needs parsing
+        let result = output;
+        if (typeof output === 'string') {
+            try {
+                const jsonMatch = output.match(/\{.*\}/s);
+                if (jsonMatch) result = JSON.parse(jsonMatch[0]);
+            } catch (e) {
+                console.error('  [Bytez] Failed to parse model output:', output);
+                return null;
+            }
+        }
+
+        return result;
+    } catch (e) {
+        console.error('  [Bytez] Scan failed:', e);
+        return null;
+    }
 }
 
 /* ============================================================
@@ -479,39 +534,62 @@ io.on('connection', (socket) => {
         const cleanText = (text || '').trim().slice(0, 2000);
         if (!cleanText) return;
 
-        // Run CyberGuard scan
+        // Run CyberGuard scan (Keyword-based)
         const result = scan(cleanText);
 
-        const msgPayload = {
-            id: Date.now() + '-' + socket.id,
-            user: user.username,
-            text: cleanText,
-            time: Date.now(),
-            scan: {
-                score: result.score,
-                sev: result.sev,
-                cats: Object.keys(result.cats),
-                flagged: result.flagged
+        // Enhance with AI scan if keyword scan confirms potential issue or for high-value detection
+        // Note: For production, you might want to throttle this or only run for certain scores.
+        // We'll run it and merge results if it returns.
+
+        (async () => {
+            let finalResult = { ...result };
+            let aiData = null;
+
+            // Only run AI scan if keyword scan is not 100% safe or randomly for quality check
+            if (result.score > 5 || Math.random() < 0.1) {
+                aiData = await aiScan(cleanText);
+                if (aiData) {
+                    // Update score if AI finds it more severe
+                    if (aiData.score > finalResult.score) {
+                        finalResult.score = aiData.score;
+                        finalResult.sev = aiData.sev;
+                    }
+                    console.log(`  [AI][Room ${roomCode}] ${user.username} AI feedback: ${aiData.sev} (${aiData.score}) - ${aiData.reason}`);
+                }
             }
-        };
 
-        if (result.sev !== 'safe') {
-            console.log(`  [FLAGGED][Room ${roomCode}] ${user.username}: "${cleanText.slice(0, 50)}..." → ${result.sev} (${result.score})`);
-        }
+            const msgPayload = {
+                id: Date.now() + '-' + socket.id,
+                user: user.username,
+                text: cleanText,
+                time: Date.now(),
+                scan: {
+                    score: finalResult.score,
+                    sev: finalResult.sev,
+                    cats: Object.keys(finalResult.cats),
+                    flagged: finalResult.flagged,
+                    ai: aiData ? { reason: aiData.reason } : null
+                }
+            };
 
-        // Send to everyone in the room
-        io.to(roomCode).emit('chat-message', msgPayload);
+            if (finalResult.sev !== 'safe') {
+                console.log(`  [FLAGGED][Room ${roomCode}] ${user.username}: "${cleanText.slice(0, 50)}..." → ${finalResult.sev} (${finalResult.score})`);
+            }
 
-        // Send private warning to sender if flagged
-        if (result.sev !== 'safe') {
-            socket.emit('warning', {
-                sev: result.sev,
-                score: result.score,
-                cats: Object.keys(result.cats),
-                flagged: result.flagged,
-                message: `Your message was flagged as ${result.sev} risk (score: ${result.score}/100)`
-            });
-        }
+            // Send to everyone in the room
+            io.to(roomCode).emit('chat-message', msgPayload);
+
+            // Send private warning to sender if flagged
+            if (finalResult.sev !== 'safe') {
+                socket.emit('warning', {
+                    sev: finalResult.sev,
+                    score: finalResult.score,
+                    cats: Object.keys(finalResult.cats),
+                    flagged: finalResult.flagged,
+                    message: `Your message was flagged as ${finalResult.sev} risk (score: ${finalResult.score}/100)`
+                });
+            }
+        })();
     });
 
     // Typing indicator (scoped to room)

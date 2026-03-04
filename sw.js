@@ -1,5 +1,5 @@
 // CyberGuard Service Worker — PWA Offline + Caching
-const CACHE_NAME = 'cyberguard-v2';
+const CACHE_NAME = 'cyberguard-v3';
 const STATIC_ASSETS = [
     '/',
     '/index.html',

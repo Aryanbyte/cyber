@@ -11,6 +11,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "bytez.js": "^3.0.0",
     "socket.io": "^4.8.3"
   },
   "engines": {

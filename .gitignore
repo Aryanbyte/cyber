@@ -5,3 +5,4 @@ saved_model/
 *.keras
 __pycache__/
 .env
+test_bytez.js
